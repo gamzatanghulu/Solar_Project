@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.solarmonitoring.mapper.GenerationLogMapper">
+
+    <insert id="insertLog" parameterType="com.solarmonitoring.domain.GenerationLogVO">
+        INSERT IGNORE INTO generation_log (
+            plant_id, log_datetime, generation_kw, voltage,
+            current, panel_temperature, solar_irradiance
+        ) VALUES (
+            #{plantId}, #{logDatetime}, #{generationKw}, #{voltage},
+            #{current}, #{panelTemperature}, #{solarIrradiance}
+        )
+    </insert>
+
+    <select id="getLogsByPlantId" resultType="com.solarmonitoring.domain.GenerationLogVO">
+        SELECT *
+        FROM generation_log
+        WHERE plant_id = #{plantId}
+        ORDER BY log_datetime DESC
+    </select>
+
+    <select id="getLogsByDatetimeRange" resultType="com.solarmonitoring.domain.GenerationLogVO">
+        SELECT *
+        FROM generation_log
+        WHERE plant_id = #{plantId}
+          AND log_datetime BETWEEN #{start} AND #{end}
+        ORDER BY log_datetime ASC
+    </select>
+    
+    <select id="getAllActivePlantIds" resultType="long">
+	    SELECT id
+	    FROM plant_meta
+	    WHERE is_active = TRUE
+	      AND id BETWEEN 150001 AND 199844
+	</select>
+	
+	
+	<select id="selectLatestLogsByRegion" resultType="com.solarmonitoring.domain.RealTimePlantVO">
+		    SELECT
+		        pm.id AS plantId,
+		        pm.plant_name AS plantName,
+		        pm.location_name AS location,
+		        gl.generation_kw AS generationKw,
+		        gl.log_datetime AS logDatetime
+		    FROM plant_meta pm
+		    JOIN (
+		        SELECT plant_id, MAX(log_datetime) AS latest_time
+		        FROM generation_log
+		        GROUP BY plant_id
+		    ) latest ON pm.id = latest.plant_id
+		    JOIN generation_log gl ON gl.plant_id = latest.plant_id AND gl.log_datetime = latest.latest_time
+		    WHERE pm.location_name LIKE CONCAT('%', #{region}, '%')
+	</select>
+	
+	<!-- 일사량 평균(일사량 null 일때 처리용) -->
+	<select id="getAverageIrradianceByLocationAndHour" resultType="Double">
+		<![CDATA[
+		    SELECT AVG(solar_irradiance)
+		    FROM solar_weather_data
+		    WHERE location = #{location}
+		      AND HOUR(date_time) = #{hour}
+		      AND solar_irradiance IS NOT NULL
+		      AND solar_irradiance > 0
+		      AND date_time < NOW()
+		]]>
+	</select>
+
+</mapper>

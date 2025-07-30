@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.solarmonitoring.mapper.WeatherDataMapper">
+
+<select id="selectAll" resultType="com.solarmonitoring.domain.WeatherDataVO">
+	SELECT
+		id AS id,
+		location AS location,
+		date_time AS dateTime,
+		temperature AS temperature,
+		humidity AS humidity,
+		wind_speed AS windSpeed,
+		cloud_coverage AS cloudCoverage,
+		solar_irradiance AS solarIrradiance,
+		created_at AS createdAt
+	FROM solar_weather_data
+</select>
+
+<select id="getWeatherByLocationAndTime"  parameterType="map" resultType="com.solarmonitoring.domain.WeatherDataVO">
+	SELECT * FROM solar_weather_data 
+	WHERE location = #{location} 
+      AND date_time = #{dateTime}
+</select>
+
+<select id="findAvgWeatherByHour" parameterType="map" resultType="com.solarmonitoring.domain.WeatherDataVO">
+  <![CDATA[
+    SELECT
+        location,
+        AVG(temperature) AS temperature,
+        AVG(humidity) AS humidity,
+        AVG(wind_speed) AS windSpeed,
+        AVG(cloud_coverage) AS cloudCoverage,
+        AVG(solar_irradiance) AS solarIrradiance
+    FROM solar_weather_data
+    WHERE location = #{location}
+      AND HOUR(date_time) = #{hour}
+      AND MONTH(date_time) = #{month}
+      AND date_time < NOW()
+    GROUP BY location
+  ]]>
+</select>
+
+
+<insert id="insertSolarWeatherData" parameterType="com.solarmonitoring.domain.WeatherDataVO">
+	<!-- solar_weather_data_test2 : 테스트용 테이블 -->
+    INSERT IGNORE INTO solar_weather_data
+    	(location, date_time, temperature, humidity, wind_speed, cloud_coverage, solar_irradiance)
+    VALUES
+    	(#{location}, #{dateTime}, #{temperature}, #{humidity}, #{windSpeed}, #{cloudCoverage}, #{solarIrradiance})
+</insert>
+</mapper>

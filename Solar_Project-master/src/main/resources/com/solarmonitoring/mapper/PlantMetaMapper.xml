@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.solarmonitoring.mapper.PlantMetaMapper">
+
+    <select id="selectAllPlants" resultType="com.solarmonitoring.domain.PlantMetaVO">
+        SELECT
+            id,
+            plant_name AS plantName,
+            location_name AS locationName,
+            latitude,
+            longitude,
+            altitude,
+            azimuth,
+            tilt,
+            installed_capacity AS installedCapacity,
+            supply_voltage AS supplyVoltage,
+            panel_type AS panelType,
+            installed_date AS installedDate,
+            is_active AS isActive,
+            comment
+        FROM plant_meta
+    </select>
+     
+    <select id="getActivePlantsWithLocation" resultType="com.solarmonitoring.domain.PlantMetaVO">
+    	SELECT 
+    		id, location_name, region
+    	FROM plant_meta 
+    	WHERE is_active = true AND location_name IS NOT NULL AND region IS NOT NULL
+    </select>
+    
+    <select id="getPlantsByLocation" resultType="com.solarmonitoring.domain.PlantMetaVO">
+    	SELECT 
+    		id,
+            plant_name AS plantName,
+            location_name AS locationName,
+            latitude,
+            longitude,
+            altitude,
+            azimuth,
+            tilt,
+            installed_capacity AS installedCapacity,
+            supply_voltage AS supplyVoltage,
+            panel_type AS panelType,
+            installed_date AS installedDate,
+            is_active AS isActive,
+            comment,
+            region
+            FROM plant_meta WHERE location_name LIKE CONCAT('%', #{location}, '%')
+	</select>
+    
+     
+
+    <insert id="insertPlantMeta" parameterType="com.solarmonitoring.domain.PlantMetaVO">
+        INSERT INTO plant_meta (
+            plant_name, location_name, latitude, longitude, altitude,
+            azimuth, tilt, installed_capacity, supply_voltage,
+            panel_type, installed_date, is_active, comment
+        )
+        VALUES (
+            #{plantName}, #{locationName}, #{latitude}, #{longitude}, #{altitude},
+            #{azimuth}, #{tilt}, #{installedCapacity}, #{supplyVoltage},
+            #{panelType}, #{installedDate}, #{isActive}, #{comment}
+        )
+    </insert>
+
+</mapper>

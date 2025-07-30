@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.solarmonitoring.mapper.PowerOutputMapper">
+
+    <select id="selectAll" resultType="com.solarmonitoring.domain.PowerOutputVO">
+        SELECT
+            id,
+            plant_id AS plantId,
+            location,
+            date_time AS dateTime,
+            predicted_output AS predictedOutput,
+            actual_output AS actualOutput,
+            model_used AS modelUsed,
+            created_at AS createdAt
+        FROM solar_power_output
+    </select>
+    
+    <!-- 실측,예측 비교용 JOIN -->
+    <select id="getPredictionWithActual" resultType="com.solarmonitoring.domain.PowerOutputVO">
+	    SELECT 
+	    	p.plant_id,
+	        p.date_time,
+	        p.location,
+	        p.predicted_output,
+	        p.actual_output,
+	        g.generation_kw AS actual_generation_kw
+	    FROM 
+	        solar_power_output p
+	    LEFT JOIN 
+	        generation_log g 
+	    ON 
+	        p.plant_id = g.plant_id
+	        AND p.date_time = g.log_datetime
+	    WHERE 
+	        p.location = #{location}
+	        AND p.date_time BETWEEN #{start} AND #{end}
+	    ORDER BY 
+	        p.date_time ASC
+	</select>
+	
+	<!-- 24, 72시간 예측 그래프 -->
+	<select id="selectRegionPowerOutputByHours" resultType="com.solarmonitoring.domain.PowerOutputVO">
+		SELECT 
+		    pm.region AS locationName,
+		    spo.date_time AS dateTime,
+		    SUM(spo.predicted_output) AS totalPredictedOutput
+		FROM 
+		    solar_power_output spo
+		JOIN
+		    plant_meta pm ON spo.plant_id = pm.id
+		WHERE 
+		    spo.date_time BETWEEN DATE_FORMAT(NOW(), '%Y-%m-%d %H:00:00')
+                        AND DATE_ADD(DATE_FORMAT(NOW(), '%Y-%m-%d %H:00:00'), INTERVAL 24 HOUR)
+		    AND (
+		      <foreach item="region" collection="regions" separator="OR">
+		        spo.location LIKE CONCAT('%', #{region}, '%')
+		      </foreach>
+		    )
+		GROUP BY 
+		    pm.region, spo.date_time
+		ORDER BY 
+		    pm.region, spo.date_time;
+	</select>
+
+	<select id="selectWeatherPredictionByRegion" resultType="com.solarmonitoring.domain.PowerOutputVO">
+		SELECT 
+		    swd.date_time AS dateTime,
+		    swd.temperature AS temperature,
+		    IFNULL(swd.solar_irradiance, 0) AS solarIrradiance,
+		    spo.predicted_output AS predictedOutput
+		FROM 
+		    solar_weather_data swd
+		JOIN 
+		    plant_meta pm ON swd.location = pm.region
+		JOIN 
+		    solar_power_output spo ON spo.date_time = swd.date_time AND spo.plant_id = pm.id
+		WHERE 
+		    (
+		        <foreach item="region" collection="regions" separator="OR">
+		            spo.location LIKE CONCAT('%', #{region}, '%')
+		        </foreach>
+		    )
+		    AND spo.date_time BETWEEN DATE_FORMAT(NOW(), '%Y-%m-%d %H:00:00')
+                        AND DATE_ADD(DATE_FORMAT(NOW(), '%Y-%m-%d %H:00:00'), INTERVAL 24 HOUR)
+
+		ORDER BY 
+		    swd.date_time ASC;
+	</select>
+	
+    <insert id="insertPowerOutput" parameterType="com.solarmonitoring.domain.PowerOutputVO">
+        INSERT IGNORE INTO solar_power_output (
+            plant_id, location, date_time, predicted_output, actual_output, model_used
+        )
+        VALUES (
+            #{plantId}, #{location}, #{dateTime}, #{predictedOutput}, #{actualOutput}, #{modelUsed}
+        )
+    </insert>
+    
+    <update id="updateActualOutput" parameterType="map">
+	    UPDATE solar_power_output
+	    SET actual_output = #{actualOutput}
+	    WHERE plant_id = #{plantId} AND date_time = #{dateTime}
+	</update>
+
+</mapper>
