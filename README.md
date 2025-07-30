@@ -1,17 +1,17 @@
 # 태양광 발전량 예측 24시간 모니터링 대시보드
 ## 💡 프로젝트 개요
-최근 재생 에너지의 비중이 점점 높아지면서, 태양광 발전은 날씨나 시간에 따라 출력이 크게 달라지는 특성이 있습니다. 
+실시간 발전 현황과 예측 데이터를 시각화하여 **태양광 발전소의 효율적인 운영**을 지원하는 대시보드 시스템입니다.  
+24시간 단위 예측치와 실제 발전량을 비교 분석하며, 지역별 날씨 정보도 함께 제공합니다.
 
-이런 출력 변동성은 전력 운영에 직접적인 영향을 주게 되고, 
-이에 따라 발전소 운영자나 태양광 에너지를 사용하는 소비자 입장에서 보다 효율적인 전력 수급 계획을 세우고, 적절한 유지보수를 하기 위한 관리가 중요해졌습니다.
+## ⚙️ 기술 스택
 
-
-이런 필요성에 따라 태양광 발전량을 지역별로 예측하고 시각화할 수 있는 시스템을 만들게 되었습니다.
-
-## 🛠️ 개발 환경 및 기술 스택
-- 개발 기간: 2025년 6월 13일 ~ 2025년 7월 1일
-- 개발자: 김인아(팀장), 김준영, 정현정
-- 프레임워크: JAVA, MySQL, Spring MVC, JS, Python, FastAPI
+| 분류 | 기술 | 설명 |
+|------|------|------|
+| **Frontend** | JSP, HTML/CSS, JavaScript, Chart.js, jQuery, Kakao Maps API | 실시간 그래프, 지도 기반 UI 구성 및 사용자 인터랙션 |
+| **Backend** | Spring Boot, MyBatis, FastAPI (Python) | 발전소 메타/로그 처리, 예측 서버 API 연동 |
+| **Database** | MySQL | 발전소 메타데이터 및 발전량/예측값 저장 |
+| **데이터 연동** | 기상청 OpenAPI, JSON 예측 데이터 | 날씨 및 기온/일사량 데이터 수집, 예측 결과 연동 |
+| **배포 환경** | STS3, Tomcat, JDK 17, Windows | Spring 환경 개발 및 JSP 웹 서버 운영 환경 |
 
 ## 📁 프로젝트 구조
 ```
@@ -71,12 +71,108 @@
 - weather_api.py : 실시간 날씨
 - 24Hplant.py : 지난 태양광 발전량
 
-### 3. 데이터베이스 구성 (MySQL)
-- 주요 테이블
-  - generation_log : 실시간으로 수집되는 발전소 데이터
-  - plant_meta : 발전소 메타 정보 (지역, 위치 등)
-  - solar_power_output : 예측 결과와 실제 발전량 정보
-  - solar_weather_data : 기온,습도, 풍속, 강수량 등 날씨 정보
+
+
+## 📷 주요 화면
+
+<table>
+  <tr>
+    <td align="center"><b>전국 지도 (SVG)</b></td>
+    <td align="center"><b>발전량 그래프</b></td>
+  </tr>
+  <tr>
+    <td>
+      <img src="https://github.com/user-attachments/assets/73a4d4c6-69fe-4b76-97ec-54bc83414d49" width="300" />
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/7fe78f3f-6956-4ede-a6e3-e22b365b75e9" width="450" />
+    </td>
+  </tr>
+</table>
+
+
+## 🛠 프로젝트 실행 방법
+### 1️⃣ 환경 준비
+
+- JDK 11 이상 설치
+- Python 3.8 이상 설치
+- MySQL 또는 MariaDB 설치 및 데이터베이스 생성
+- Maven 설치
+- 개발 도구: STS (Spring Tool Suite), IntelliJ (Java), VSCode (Python 등)
+
+### 2️⃣ 프로젝트 클론
+```
+git clone https://github.com/사용자명/프로젝트명.git
+cd 프로젝트명
+```
+### 3️⃣ 데이터베이스 세팅
+- src/main/resources/sql/ 디렉토리 내 SQL 파일을 사용해 DB 테이블 및 초기 데이터 구성:
+```
+# 테이블 및 데이터 예시
+source sql/plant_meta.sql;
+source sql/generation_log.sql;
+source sql/solar_power_output.sql;
+source sql/solar_weather_data.sql;
+```
+- DB 접속 설정: src/main/resources/application.properties 파일 수정
+
+```
+spring.datasource.url=jdbc:mysql://localhost:3306/your_db_name
+spring.datasource.username=your_db_user
+spring.datasource.password=your_db_password
+```
+
+### 4️⃣ API 키 설정
+- 기상청 및 OpenWeatherMap API 키를 발급받아 application.properties에 추가
+- weather.api.key=여기에_발급받은_키를_입력하세요
+
+### 5️⃣ Java Spring Boot 서버 실행
+
+```
+# 프로젝트 빌드
+mvn clean install
+```
+```
+# 서버 실행
+mvn spring-boot:run
+```
+### 6️⃣ Python FastAPI 서버 실행
+```
+# FastAPI 코드 디렉토리로 이동
+cd python-api  # 또는 fastapi_backend
+```
+
+- 가상환경 생성 (선택)
+```
+python -m venv venv
+```
+- 가상환경 활성화
+```
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
+```
+
+- 의존성 설치
+```
+pip install -r requirements.txt
+```
+
+- FastAPI 서버 실행
+```
+uvicorn 24Hplant:app --reload --host 0.0.0.0 --port 8000
+```
+
+🔹 주의: 24Hplant:app은 실제 FastAPI 엔트리포인트에 맞게 수정 필요합니다 (파일명:앱객체명).
+
+### 7️⃣ 웹 접속 주소
+구분	주소
+```
+🌐 Java 서버 (JSP 대시보드)	http://localhost:8080
+🔧 FastAPI Swagger Docs	http://localhost:8000/docs
+```
+
 
 
 
